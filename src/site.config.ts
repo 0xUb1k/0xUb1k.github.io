@@ -7,7 +7,7 @@ const config: SiteConfig = {
   title: "Ub1k's blog",
   // The description of your site, used for SEO and RSS feed.
   description:
-    'My personal blog about cybersecurity (binary exploitation) and life',
+    'Blog about cybersecurity and computer science made by David Hermes',
   // The author of the site, used in the footer, SEO, and RSS feed.
   author: 'David Hermes',
   // Keywords for SEO, used in the meta tags.
