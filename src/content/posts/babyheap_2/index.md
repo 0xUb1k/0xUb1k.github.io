@@ -349,7 +349,7 @@ while (cur->idx > 0)
 
 ## Putting it all together
 In practice, we are going to inspect the **exit handler array entries**, look for an exit handler with `flavor == 4 (ef_cxa)` to overwrite with a pointer to `system()`, and then set `/bin/sh` as its first argument. Getting a shell from there is as easy as executing the binary and exiting.
-### Step 1: Getting the `__exit_funcs` struct
+### Step 1: Getting the \_\_exit_funcs struct
 
 Using our _libc leak_ obtained before, we get the `__exit_funcs` struct by summing the offset of the struct with the libc base address. libc uses the symbol `initial` to point at the exit_funcs, if needed, bigger arrays can be generated to extend the number of exit functions that can be registered, this one is the initial array that always exists:
 
@@ -371,7 +371,7 @@ pwndbg> tele 0x7f3046204fc0 <-- libc_base + initial offset
 ```
 
 Looking at the output from pwndbg above, we notice only one entry in the array, fortunately this is a `ef_cxa` entry, now we only need to replace it with the `system()` function.
-### Step 2: Replacing function with `system()`
+### Step 2: Replacing function with system()
 Do you notice something wrong with the function address in the snipped above? That's **not** an address. When an atexit function gets registered, its address is xored with a key called **pointer_chk_guard** and then rotated left by 17 bits (0x11).  
 $$
 \text{mangled\_address} = \texttt{rol}(\text{address} \oplus\ \text{key} , \text{0x11})

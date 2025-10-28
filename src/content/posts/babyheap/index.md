@@ -191,7 +191,7 @@ Finally, we free the chunk placed over the `perthread` structure, the deallocato
 
 # ROP exploit using `__environ`
 Once we have arbitrary read and write into the libc getting a leak to the stack is very simple, enter `__environ`.
-### `__environ`
+### The \_\_environ variable
 
 :::note
 Yes, here's a joke about `__environ`: 
