@@ -5,7 +5,7 @@ draft: false
 tags: ['pwn', 'heap', 'exit_funcs']
 toc: true
 ---
-Let's tackle the next chapter of babyheap, this one a bit more exotic...
+Let's tackle the next chapter of babyheap, this one is a bit more exotic...
 # scanf and black magic
 Let’s examine the menu’s `scanf` input function.  
 **Question:** how can you send it an arbitrarily long number without triggering a buffer overflow?  
