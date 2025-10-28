@@ -65,10 +65,11 @@ Looking at the `delete_chunk()`function we notice that it doesn't remove the add
 
 When `malloc()` is called, generally, a memory address to the heap is returned, this address points to the user data of a struct, the sections above contain important metadata. We like to call this memory areas chunks.
 
-![[writeup-002.webp]]
+
+![](./images/writeup-002.webp)
 
 Looking at the chunks header, we notice a few significant fields: The size field stores the amount of bytes that divide this chunk from the next one, yet nothing stops us from writing more bytes than the amount specified in the size field. 
-Another interesting part is the P flag, if `prev_used` is set, free() knows that the previous chunk is currently allocated, if the falg isn't set, the allocator could try to fuse together the two chunks to create a bigger one.
+Another interesting part is the P flag, if `prev_used` is set, free() knows that the previous chunk is currently allocated, if the flag isn't set, the allocator could try to fuse together the two chunks to create a bigger one.
 
 ## The bins
 
@@ -89,7 +90,7 @@ This last three bins are implemented as doubly-linked circular lists. These have
 If this binary had **Partial RELRO** and was **non-PIE**, we could have allocated two chunks and then freed them.  
 Once freed, both chunks would be placed into the `tcache` linked list, and where their data once resides, pointers to the next chunk in the linked list would now be written. By modifying the first chunk’s forward pointer to reference something like the GOT, the allocator would think that the second chunk is the GOT table. 
 
-:::note
+:::warning
 From `LIBC-2.32` The forward pointer (`fd`) addresses saved in the freed tcache entries are **encoded** (mangled). 
 ```c 
 //libc internals
@@ -110,8 +111,8 @@ But the encoding is easily reversed, the page address used for mangling is part 
 
 ```python
 def demangle_alone(ptr,page_offset=0):
-    mid = ptr ^ ((ptr>>12)+page_offset)
-    return mid ^ (mid>>24)
+	mid = ptr ^ ((ptr>>12)+page_offset)
+  	return mid ^ (mid>>24)
 ```
 :::
 Then, by reallocating the two chunks, the allocator would return the address of the GOT as the second allocation (the first 16 bytes get zeroed out, look at the info callout below), we could then:
@@ -139,7 +140,7 @@ I’ll present **two** methods to leak a libc pointer, followed by **two** techn
 # House of something
 As explained in the heap primer, the heads of the linked lists for `smallbin`, `largebin`, and `unsortedbin` live in `main_arena` inside libc. Those lists are doubly linked and circular. If we can move a chunk into one of those bins we can read the `fd` pointer that points back into libc and obtain a libc leak usable later.
 
-Sending a chunk into those bins requires freeing a large enough chunk. The tcache holds chunks up to size `0x410` (inclusive), so we must either create a single chunk larger than `0x410` or free more than seven smaller chunks while avoiding the fastbin path (above 0x80 bytes), we will try to deallocate a 0x410 or greate size chunk.
+Sending a chunk into those bins requires freeing a large enough chunk. The tcache holds chunks up to size `0x410` (inclusive), so we must either create a single chunk larger than `0x410` or free more than seven smaller chunks while avoiding the fastbin path (above 0x80 bytes), we will try to deallocate a 0x410 or greater size chunk.
 
 ## Reasoning about chunks
 **Question**: By manipulating a chunk’s fd pointer (tcache poisoning) to position the next chunk in the tcache list just above a previously allocated third chunk, is it possible to use the first chunk to alter the size metadata of the second chunk, so that when the third chunk is freed, the allocator interprets its size as 0x420 bytes and moves the chunk into unsortedbin?
