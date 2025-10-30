@@ -65,15 +65,15 @@ Looking at the `delete_chunk()`function we notice that it doesn't remove the add
 
 When `malloc()` is called, generally, a memory address to the heap is returned, this address points to the user data of a struct, the sections above contain important metadata. We like to call this memory areas chunks.
 
-
 ![](./images/writeup-002.webp)
 
+**From now one we will consider the header part of the chunk, so it’s size becomes 0x40 instead of 0x30.**
 Looking at the chunks header, we notice a few significant fields: The size field stores the amount of bytes that divide this chunk from the next one, yet nothing stops us from writing more bytes than the amount specified in the size field. 
 Another interesting part is the P flag, if `prev_used` is set, free() knows that the previous chunk is currently allocated, if the flag isn't set, the allocator could try to fuse together the two chunks to create a bigger one.
 
 ## The bins
 
-When a chunk is freed, from `LIBC-2.26` onwards the allocator first tries to place its _user data_ address as the first element of a per-size-class singly linked list called the **tcache**, which can hold up to 7 elements in every class of max 0x410 bytes of size. 
+When a chunk is freed, from `LIBC-2.26` onwards the deallocator first tries to place an address pointing to the user data as the first element of a per-size-class singly linked list called the **tcache**, which can hold up to 7 elements in every class of max 0x410 bytes of size. 
 
 In the free operation, the first 0x10 bytes of the user data are overwritten with a pointer to the next chunk in the list (fd) and a random value called tcache key used to prevent double frees (not to be confused with the tcache **mangling** key explained later in this chapter). This means that when a freed chunk is read, you won't read the content it stored before but a pointer to a previously freed chunk or, if this is the first freed chunk, a null pointer. 
 
@@ -88,7 +88,7 @@ This last three bins are implemented as doubly-linked circular lists. These have
 ## tcache poisoning
 
 If this binary had **Partial RELRO** and was **non-PIE**, we could have allocated two chunks and then freed them.  
-Once freed, both chunks would be placed into the `tcache` linked list, and where their data once resides, pointers to the next chunk in the linked list would now be written. By modifying the first chunk’s forward pointer to reference something like the GOT, the allocator would think that the second chunk is the GOT table. 
+Once freed, both chunks would be placed into the `tcache` linked list, and where their data once resides, pointers to the next chunk in the linked list would now be written. By modifying the last freed chunk’s forward pointer (first element in the tcache list) to point to something like the GOT, the allocator would think that the first deallocated chunk (second element in the tcache) is stored in the GOT table.
 
 :::warning
 From `LIBC-2.32` The forward pointer (`fd`) addresses saved in the freed tcache entries are **encoded** (mangled). 
@@ -100,14 +100,14 @@ From `LIBC-2.32` The forward pointer (`fd`) addresses saved in the freed tcache 
 ```
 The macro takes as input the position where the pointer is saved and the location where the pointer is pointing too. 
 
-It then shifsts away the 12 least significant bits of the position value, a memory page is generaly 0x1000 (16 bits) long, so we are removing the information about page internal positioning, leaving only the **page address**. In other words two chunks in the same page will have the same `((size_t) pos) >> 12)` value.
+It then shifts away the 12 least significant bits of the position value, a memory page is generaly 0x1000 (16 bits) long, so we are removing the information about page internal positioning, leaving only the **page address**. In other words two chunks in the same page will have the same `((size_t) pos) >> 12)` value.
 It then xores this value with the pointer to mangle it.
 
 This ensures that the _encoded value depends both on the pointer and on the page where it is stored_. Pointers stored in different pages will be mangled differently, even if they point to the same target.
 
 By doing the same operatin again we can reveal the pointer.
 
-But the encoding is easily reversed, the page address used for mangling is part of the address itself, so this algorithm could be defined as a deterministic scramble. xoring the mangled pointer with shifted parts of itself completly decodes the pointer.
+But this encoding is easily reversed, the page address used for mangling is part of the address itself, so this algorithm could be defined as a deterministic scramble. Xoring the mangled pointer with shifted parts of itself completly decodes the pointer.
 
 ```python
 def demangle_alone(ptr,page_offset=0):
@@ -115,9 +115,9 @@ def demangle_alone(ptr,page_offset=0):
   	return mid ^ (mid>>24)
 ```
 :::
-Then, by reallocating the two chunks, the allocator would return the address of the GOT as the second allocation (the first 16 bytes get zeroed out, look at the info callout below), we could then:
+Then, by reallocating the two chunks, the allocator would return the address of the GOT as the second allocation (the first 16 bytes get zeroed out, look at the note below), we could then:
 
-1. **Read** from the GOT by reading from the second chunk to leak a `libc` address.
+1. **Read** from the GOT by reading from the second chunk to leak a libc address, but this only works with ‘fwrite()’ or similar because the first 0x10 bytes are null pointers terminating ‘printf’ or ‘puts’ instantly.
 2. **Overwrite** a GOT entry (`free`) with the address of `system()`, giving us a shell the next time that function is called.
 
 :::note
@@ -129,10 +129,10 @@ But that’s not the case here… behold:
 
 Still, this very simple technique called **tcache poisoning** will prove useful several times throughout this writeup.
 
-But let’s exit this hypothetical scenario and focus on the real limitations we face: the binary has **no address leak** and **no buffer overflow**, we need to take control in some other way.  
+But let’s exit this hypothetical scenario and focus on the real limitations we face: the binary has **no apparent address leak** and **no buffer overflow**, we need to take control in some other way.  
 
 # The Plan
-Our actual goal is to gain **arbitrary read and write primitives within libc**. With these, we can leak crucial pointers like \_\_envrion, `__exit_functions` or other stuff, and eventually get to a shell.
+Our actual goal is to gain **arbitrary read and write primitives within libc**. With these, we can leak crucial pointers like `__envrion`, `__exit_functions` or other stuff, and eventually get to a shell.
 At this point, it’s worth clarifying that I didn’t solve this challenge during the competition itself. Instead, I studied various writeups to deeply understand the possible solutions and their underlying mechanics.
 
 I’ll present **two** methods to leak a libc pointer, followed by **two** techniques to leverage that leak to achieve a shell. The first leak and exploit can be found in this part, the second part includes a more exotic variant.
@@ -194,7 +194,7 @@ Once we have arbitrary read and write into the libc getting a leak to the stack 
 ### The \_\_environ variable
 
 :::note
-Yes, here's a joke about `__environ`: 
+ Yes, here's a joke about `__environ`: 
 `__environ` goes to therapy. Talks nonstop for hours. 
 Then it asks, “Why always me?”  
 Therapist responds, “It all comes from your environment.” 
