@@ -7,11 +7,11 @@ const config: SiteConfig = {
   title: "Ub1k's blog",
   // The description of your site, used for SEO and RSS feed.
   description:
-    'Blog about cybersecurity and computer science made by David Hermes',
+    'Cybersecurity blog by David Hermes, focused on binary exploitation, pwn, reverse engineering, and CTF writeups.',
   // The author of the site, used in the footer, SEO, and RSS feed.
   author: 'David Hermes',
   // Keywords for SEO, used in the meta tags.
-  tags: ['Pwn', 'Binary', 'Blog', 'Ub1k', 'David Hermes', 'David', "Hermes", "Exploitation"],
+  tags: ['pwn', 'pwnable', 'binary exploitation', 'ctf', 'reverse engineering', 'cybersecurity', 'Ub1k', 'David Hermes', 'David', 'Hermes'],
   // Path to the image used for generating social media previews.
   // Needs to be a square JPEG file due to limitations of the social card generator.
   // Try https://squoosh.app/ to easily convert images to JPEG.
