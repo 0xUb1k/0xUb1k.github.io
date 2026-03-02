@@ -72,7 +72,7 @@ But where exactly does the OOB byte land?
 ## One byte to rule them all
 Looking at the `echo()` function we see that the `max_chars` variable is allocated directly after our buffer on the stack, this is great! With a single byte it is possible to overwrite `max_chars` with something like `0xFF` and get a big buffer overflow. 
 
-```
+```python
 [rbp-0x50] buffer (64 bytes)  <-- Fills with "A"*64 
 [rbp-0x10] max_chars (1 byte) <-- Can be overwritten by "\xFF"
 ```
@@ -87,7 +87,7 @@ Yet we still have a little hurdle to overcome to get to a return address overwri
 ## One byte to leak them 
 Stack canary have a nice property (or not, depends on the situation), the first byte is always a zerobyte. On one hand it stops us from leaking the canary with a simple print function because the nullbyte acts as a string terminator, on the other hand we can simply overwrite that byte without losing information about the canary.
 
-By overflowing the buffer till the first byte of the canary the logic separation between the string and the canary bytes is lost, as such puts will continue printing till a nullbyte is reached, this will also leak the saved RBP.
+By overflowing the buffer till the first byte of the canary the logic separation between the string and the canary bytes is lost, as such `puts()` will continue printing till a nullbyte is reached, this will also leak the saved RBP conveniently.
 
 ```python
 r.sa(b"echo ", b"A"*64 + b"\x77" + b"B"*7 + b"Z") #0x49 bytes, max_chars must be \x48
@@ -110,7 +110,7 @@ AAAAA...AAAOBBBBBBBZO\x93;\x11Q_|\xb0\x84D\x80\xfe\x7f
 We can use the `Z` character as a delimiter to slice the output (this is why we added it), parse the leaked bytes, and reconstruct the canary and the saved RBP.
 
 :::note
-Remember that the read canary will 7 bytes long, the leading zero byte must be added before unpacking the value with `u64(canary_leak)`.
+Remember that the leaked canary will be 7 bytes long, the leading zero byte must be added before unpacking the value with `u64(canary_leak)`.
 :::
 
 We are finally ready to overwrite the saved return pointer. But what do we point it to? We need one more leak... a pointer to Libc.
