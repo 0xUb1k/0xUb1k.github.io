@@ -1,7 +1,7 @@
 ---
 title: "echo: Srdnlen Quals 2026"
 published: 2026-2-03
-draft: false
+draft: true
 tags: ["pwn", "libc fingerprint", "off-by-one"] 
 toc: true
 ---
