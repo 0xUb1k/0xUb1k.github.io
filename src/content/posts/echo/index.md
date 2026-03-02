@@ -5,8 +5,6 @@ draft: false
 tags: ["pwn", "libc fingerprint", "off-by-one"] 
 toc: true
 ---
-# echo: Srdnlen Quals 2026g
-
 What can you do with a single overflowing byte? Well... first let's look at the security mitigations. 
 You'll notice that this is a completely locked-down binary, but that won't stop us.
 
