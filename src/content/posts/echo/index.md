@@ -1,8 +1,11 @@
 ---
 title: "echo: Srdnlen Quals 2026"
-published: 2026-2-03
+published: 2026-02-03
 draft: false
-tags: ["pwn", "libc fingerprint", "off-by-one"] 
+tags:
+  - pwn
+  - libc fingerprint
+  - off-by-one
 toc: true
 ---
 What can you do with a single overflowing byte? Well... first let's look at the security mitigations. 

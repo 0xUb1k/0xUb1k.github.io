@@ -1,8 +1,11 @@
 ---
 title: "he_protecc: CornCTF 2025"
-published: 2024-20-06
+published: 2025-06-20
 draft: false
-tags: ["pwn", "shellcode", "seccomp"] 
+tags:
+  - pwn
+  - shellcode
+  - seccomp
 toc: true
 ---
 # he_protecc: CornCTF 2025
