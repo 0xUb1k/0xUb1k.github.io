@@ -8,7 +8,7 @@ tags:
   - seccomp
 toc: true
 ---
-# he_protecc: CornCTF 2025
+## he_protecc: CornCTF 2025
 
 This is the first pwn challenge in the CornCTF 2025.
 
@@ -25,11 +25,11 @@ By executing the binary we are prompted to input the length of some shellcode fo
 
 It would definitely be too easy if we could execute a `execve("/bin/sh",null,null)` and get the shell. 
 Let's take a closer look at the binary to see what's really happening.
-# Looking around
+## Looking around
 Disassembling the binary reveals an easy to read and understand code, let's look at the most important stuff.
 
 ![](images/he_protecc-013.png)
-## mmap my beloved
+### mmap my beloved
 
 :::note
 **mmap**() creates a new mapping in the virtual address space of the calling process. In other words, it creates a new data area in a position and with permissions decided by the caller, it is used in dynamically loaded binaries and in some cases in heap allocation. 
@@ -48,7 +48,7 @@ To understand the flags we can use the `strace` command and read the instruction
 These two flags simply signal that the mapped region is private to our process and not mapped to any file, this means the area is initialized with zeroes.
 
 A boring mmap region, nothing special here... sadly
-## seccomp
+### seccomp
 
 I'm not going to show the full `setup_seccomp()` disassembly as it is a bit ugly, the important part comes at the end:
 
@@ -106,17 +106,17 @@ Using `vmmap` we can see that only one mapping has read and execution permission
 By piping the instructions found in that memory area into `grep` we can see a few syscall instruction inside `vdso`, jumping to them should give us the syscall we need!
 
 ![](images/he_protecc-016.webp)
-# Leak & Pwn
+## Leak & Pwn
 
 Here comes the problem, even if the ELF is not PIE, the stack and also `vdso` still get randomized by **ASLR**, even worse, the internal offsets also get randomized... But let's tackle one problem after another:
 
-## The Leak
+### The Leak
 
 Using `p2p stack vdso` we can see 4 leaks on the stack for **vdso**, let's choose the first one.
 
 ![](images/he_protecc-017.webp)
 
-## Assembly 
+### Assembly 
 
 Now comes the *difficult* part, we can't calculate the offset between the syscalls and our leak because we cannot guarantee that the internal offsets are the same in the remote binary, we need to scan the memory area...
 

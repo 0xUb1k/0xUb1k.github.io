@@ -13,7 +13,7 @@ By the end of this write-up, I hope you’ll understand both my frustration and 
 
 This is a two-part journey: from simple heap exploitation to advanced techniques, and finally, as dessert, an `exit_function` overwrite and `environ` leak.
 
-# The disassembly
+## The disassembly
 As usual, we are not going to look at the entire binary, but instead focusing on the relevant parts. For context, the program is straightforward:
 
 - `create_chunk()` Allocates a buffer of size `0x30`.
@@ -57,7 +57,7 @@ void delete_chunk()
 
 Looking at the `delete_chunk()`function we notice that it doesn't remove the address from the array once deleted. This has a few implications, _first_ it is possible to read and write to a freed chunk, and _second_, once created a chunk you cannot call a second time `create_chunk()` on the same index, this limits our `create_chunk()` calls to maximum 20.
 
-# Heap Exploitation
+## Heap Exploitation
 
 :::warning
 **Heap exploitation** is a complex topic, so I won’t go too deep here. If you are interested here is a link to some [material](https://5o1z.github.io/blog/heapexploitation/getting_started/).
@@ -71,7 +71,7 @@ When `malloc()` is called, generally, a memory address to the heap is returned, 
 Looking at the chunks header, we notice a few significant fields: The size field stores the amount of bytes that divide this chunk from the next one, yet nothing stops us from writing more bytes than the amount specified in the size field. 
 Another interesting part is the P flag, if `prev_used` is set, free() knows that the previous chunk is currently allocated, if the flag isn't set, the allocator could try to fuse together the two chunks to create a bigger one.
 
-## The bins
+### The bins
 
 When a chunk is freed, from `LIBC-2.26` onwards the deallocator first tries to place an address pointing to the user data as the first element of a per-size-class singly linked list called the **tcache**, which can hold up to 7 elements in every class of max 0x410 bytes of size. 
 
@@ -85,7 +85,7 @@ If the tcache is full and the elements are not compatible with the fastbin size-
 
 This last three bins are implemented as doubly-linked circular lists. These have their head stored in the **libc address space**, to be more precise, in the `main_arena`, and because of the circular nature of these lists, the **last** element has a forward (fd) pointer to the head of the list stored in the arena, also because of the double-link, the **first** element has a backwards pointer (bk) to it too. So by reading a freed chunk in these bins you can receive a libc leak.
 
-## tcache poisoning
+### tcache poisoning
 
 If this binary had **Partial RELRO** and was **non-PIE**, we could have allocated two chunks and then freed them.  
 Once freed, both chunks would be placed into the `tcache` linked list, and where their data once resides, pointers to the next chunk in the linked list would now be written. By modifying the last freed chunk’s forward pointer (first element in the tcache list) to point to something like the GOT, the allocator would think that the first deallocated chunk (second element in the tcache) is stored in the GOT table.
@@ -131,18 +131,18 @@ Still, this very simple technique called **tcache poisoning** will prove useful 
 
 But let’s exit this hypothetical scenario and focus on the real limitations we face: the binary has **no apparent address leak** and **no buffer overflow**, we need to take control in some other way.  
 
-# The Plan
+## The Plan
 Our actual goal is to gain **arbitrary read and write primitives within libc**. With these, we can leak crucial pointers like `__envrion`, `__exit_functions` or other stuff, and eventually get to a shell.
 At this point, it’s worth clarifying that I didn’t solve this challenge during the competition itself. Instead, I studied various writeups to deeply understand the possible solutions and their underlying mechanics.
 
 I’ll present **two** methods to leak a libc pointer, followed by **two** techniques to leverage that leak to achieve a shell. The first leak and exploit can be found in this part, the second part includes a more exotic variant.
 
-# House of something
+## House of something
 As explained in the heap primer, the heads of the linked lists for `smallbin`, `largebin`, and `unsortedbin` live in `main_arena` inside libc. Those lists are doubly linked and circular. If we can move a chunk into one of those bins we can read the `fd` pointer that points back into libc and obtain a libc leak usable later.
 
 Sending a chunk into those bins requires freeing a large enough chunk. The tcache holds chunks up to size `0x410` (inclusive), so we must either create a single chunk larger than `0x410` or free more than seven smaller chunks while avoiding the fastbin path (above 0x80 bytes), we will try to deallocate a 0x410 or greater size chunk.
 
-## Reasoning about chunks
+### Reasoning about chunks
 **Question**: By manipulating a chunk’s fd pointer (tcache poisoning) to position the next chunk in the tcache list just above a previously allocated third chunk, is it possible to use the first chunk to alter the size metadata of the second chunk, so that when the third chunk is freed, the allocator interprets its size as 0x420 bytes and moves the chunk into unsortedbin?
 
 In theory, **yes**, but with important caveats. We must have a second chunk immediately after our forged chunk (including it's modified size), in this way when we free the giant chunk it doesn't get trimmed away.  
@@ -154,7 +154,7 @@ To guarantee that an extra chunk is placed immediately behind our forged `0x420`
 
 But it's not so simple, with 19 allocations we don't have enough chunks to push the top chunk behind our forged one and also have enough allocations to do some tcache poisoning for our final exploitation. We need another strategy. 
 
-## tcache_perthread_struct
+### tcache_perthread_struct
 The Tcache has a significant property that the other bins don't have, it is local to a specific thread, if more threads are present in the process, more tcaches are created. To make this work, for every thread a tcache struct called `tcache_perthread_struct` is allocated that contains the heads of the linked lists and the number of freed chunks. For our primary thread the 0x290 bytes long perthread_struct is allocated at the top.
 
 ```c
@@ -176,7 +176,7 @@ Yes. Even though we never directly allocated this chunk and thus did not receive
 This approach significantly reduces the number of required allocations to correctly position the guard chunk, from 16 allocations (excluding the guard and the two overlapping chunks) down to just 6.
 
 The main drawback is that the `perthread_struct` becomes corrupted, breaking the tcache metadata, in particular the amount of stored chunks saved at the beginning of the struct get zeroed out by the allocation and filed with values at the deallocation. Nevertheless, this appears to be our only viable option for obtaining a chunk large enough for the intended purpose.
-## You are 0x440 bytes big, trust me
+### You are 0x440 bytes big, trust me
 Talk is cheap, so let’s move to the practical part.  
 We’ll use **tcache poisoning** to place a chunk precisely at the location of the `perthread_chunk` the deallocator will mistake the perthread_chunks size as the one of our own chunks. Then, we allocate a second chunk and poison the tcache again so that it partially overlaps the `perthread`/fake-chunk metadata. This overlapping chunk gives us write access to the `perthread` metadata, allowing us to modify its size field from `0x290` to `0x440`.
 
@@ -189,9 +189,9 @@ Finally, we free the chunk placed over the `perthread` structure, the deallocato
 
 ![](./images/writeup-003-1.webp)
 
-# ROP exploit using `__environ`
+## ROP exploit using `__environ`
 Once we have arbitrary read and write into the libc getting a leak to the stack is very simple, enter `__environ`.
-### The \_\_environ variable
+#### The \_\_environ variable
 
 :::note
  Yes, here's a joke about `__environ`: 
@@ -205,7 +205,7 @@ Therapist responds, “It all comes from your environment.”
 environ = libc_base + libc.symbols.__environ
 ```
 
-### The ROP chain 
+#### The ROP chain 
 
 We can use **tcache poisoning** to overwrite the `fd` pointer of the first freed chunk with the address of `__environ`. After allocating twice, the second allocation will return a chunk overlapping the `__environ` pointer.
 
