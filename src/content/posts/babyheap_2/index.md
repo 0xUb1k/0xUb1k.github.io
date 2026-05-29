@@ -6,11 +6,11 @@ tags: ['pwn', 'heap', 'exit_funcs']
 toc: true
 ---
 Let's tackle the next chapter of babyheap, this one is a bit more exotic...
-# scanf and black magic
+## scanf and black magic
 Let’s examine the menu’s `scanf` input function.  
 **Question:** how can you send it an arbitrarily long number without triggering a buffer overflow?  
 **Answer:** it uses the heap.
-## Ocean of scanf
+### Ocean of scanf
 
 ```c
 //babyheap main function
@@ -161,7 +161,7 @@ __libc_scratch_buffer_grow_preserve (struct scratch_buffer *buffer)
 ```
 
 Now we know in which situation `malloc` gets called from `scanf`, but how can this be helpful to our purpose of **leaking a libc address pointer?** The scratchpad gets freed after usage and removed from the heap, so how can we maintain a freed chunk in the small or large bins with this knowledge? It seems that our deep dive is not finished yet... enter the depths of malloc.
-## Deep into malloc
+### Deep into malloc
 Looking at the `malloc()` implementation inside `libc`, we notice that if the requested chunk is larger than the biggest chunk size stored in the `smallbins`, `malloc_consolidate()` is called.
 
 ```c
@@ -219,7 +219,7 @@ Over time, this can fragment memory. When `malloc()` needs a lot of space (when 
 
 This means that if we generate a fastbin chunk and trigger in some way `malloc_consolidate` the generated fastbin chunk gets moved into the **smallbin** even if it's a small chunk. Reading this chunk gives us a libc leak. 
 But as we discovered before, to execute `malloc_consolidate` we need to allocate a chunk of size 0x400 or greater, this is where our scanf trick comes handy.
-## Putting it all together.
+### Putting it all together.
 
 We start by generating eight chunks (7 tcache + 1 fastbin) and free them in a particular order to guarantee that the **fastbin chunk** is **not** the last one in heap memory. Else, the fastbin chunk would simply be trimmed by malloc_consolidate.
 
@@ -231,7 +231,7 @@ To achieve this we can send `b"1"*0x500` to `scanf`, this is bigger than `0x400`
 ![](./images/writeup-012.webp)
 
 by using `chunk_read()` on the first chunk we can leak the libc address!!!!!!!
-# Exploiting with exit_func overwrite
+## Exploiting with exit_func overwrite
 Looking at the `exit()` function, we notice that it is only a wrapper around `__run_exit_handlers()`.
 
 ```c
@@ -347,9 +347,9 @@ while (cur->idx > 0)
 }
 ```
 
-## Putting it all together
+### Putting it all together
 In practice, we are going to inspect the **exit handler array entries**, look for an exit handler with `flavor == 4 (ef_cxa)` to overwrite with a pointer to `system()`, and then set `/bin/sh` as its first argument. Getting a shell from there is as easy as executing the binary and exiting.
-### Step 1: Getting the \_\_exit_funcs struct
+#### Step 1: Getting the \_\_exit_funcs struct
 
 Using our _libc leak_ obtained before, we get the `__exit_funcs` struct by summing the offset of the struct with the libc base address. libc uses the symbol `initial` to point at the exit_funcs, if needed, bigger arrays can be generated to extend the number of exit functions that can be registered, this one is the initial array that always exists:
 
@@ -371,7 +371,7 @@ pwndbg> tele 0x7f3046204fc0 <-- libc_base + initial offset
 ```
 
 Looking at the output from pwndbg above, we notice only one entry in the array, fortunately this is a `ef_cxa` entry, now we only need to replace it with the `system()` function.
-### Step 2: Replacing function with system()
+#### Step 2: Replacing function with system()
 Do you notice something wrong with the function address in the snipped above? That's **not** an address. When an atexit function gets registered, its address is xored with a key called **pointer_chk_guard** and then rotated left by 17 bits (0x11).  
 $$
 \text{mangled\_address} = \texttt{rol}(\text{address} \oplus\ \text{key} , \text{0x11})
@@ -433,7 +433,7 @@ AT_RSEQ_ALIGN:        32
  looking at the `AT_RANDOM` entry, we see that it points to the stack. The kernel copies 16 bytes from kernel entropy into the stack at initialization: the first 8 bytes are our canary, the second giant word is our **pointer_chk_guard**. 
 But why are the values copied into the TCB if they are saved on the stack too? Because every thread needs to access this values.
 :::
-### Step 3: exiting gracefully 
+#### Step 3: exiting gracefully 
 
 Now we have everything to get the key, by overwriting the struct with the mangled `system()` address and `/bin/sh` as a
 rgument we simply need to run the program and exit to get a shell.

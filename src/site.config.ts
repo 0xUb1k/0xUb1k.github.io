@@ -154,7 +154,7 @@ const config: SiteConfig = {
     github: 'https://github.com/0xUb1k',
     //mastodon: 'https://github.com/stelcodes/multiterm-astro',
     email: 'mailto:info@davidherm.es',
-    linkedin: 'https://www.linkedin.com/in/david-hermes-46168226a/',
+    linkedin: 'https://www.linkedin.com/in/davidhermes/',
     //bluesky: 'https://github.com/stelcodes/multiterm-astro',
     //twitter: 'https://github.com/stelcodes/multiterm-astro',
     rss: true, // Set to true to include an RSS feed link in the footer
