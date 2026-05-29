@@ -26,7 +26,7 @@ const pageTitle =
   `Tag: ${tagTitle}` + (page.currentPage > 1 ? ` - Page ${page.currentPage}` : '')
 ---
 
-<Layout title={pageTitle} description={`All posts tagged with ${tagTitle}`}>
+<Layout title={pageTitle} description={`All posts tagged with ${tagTitle}`} noindex={true}>
   <div class="mt-2 sm:mt-0">
     <PageHeader titlePieces={['tags', tagTitle]} />
     {page.data.map((post) => <PostPreview post={post} />)}

@@ -13,9 +13,10 @@ interface Props {
   description?: string
   tags?: string[]
   author?: string
+  noindex?: boolean
 }
 
-const { title, description, tags, author } = Astro.props
+const { title, description, tags, author, noindex = false } = Astro.props
 const pageUrl = new URL(Astro.url.pathname, Astro.site).href.replace(/\/$/, '') // Remove trailing slash for consistency
 const pageType = Astro.url.pathname.startsWith('/posts') ? 'article' : 'website'
 const pageTitle = title ? `${title} - ${siteConfig.title}` : siteConfig.title
@@ -157,6 +158,7 @@ let generatedCss: string = cssLines.join('\n')
     <!-- Pixel Code for https://simplifyanalytics.app/ -->
     <script defer src="https://simplifyanalytics.app/pixel/X2wl15Nhk0iPhfQB"></script>
     <!-- END Pixel Code -->
+    {noindex && <meta name="robots" content="noindex" />}
 
   </head>
   <body class="w-full h-full m-0 bg-background text-foreground">
