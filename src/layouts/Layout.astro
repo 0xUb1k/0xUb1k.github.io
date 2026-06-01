@@ -14,9 +14,13 @@ interface Props {
   tags?: string[]
   author?: string
   noindex?: boolean
+  datePublished?: string
+  dateModified?: string
 }
 
-const { title, description, tags, author, noindex = false } = Astro.props
+const { title, description, tags, author, noindex = false, datePublished, dateModified } = Astro.props
+
+
 const pageUrl = new URL(Astro.url.pathname, Astro.site).href.replace(/\/$/, '') // Remove trailing slash for consistency
 const pageType = Astro.url.pathname.startsWith('/posts') ? 'article' : 'website'
 const pageTitle = title ? `${title} - ${siteConfig.title}` : siteConfig.title
@@ -31,6 +35,28 @@ const pageImage =
 const pageKeywords = [
   ...new Set(siteConfig.tags.concat(tags || []).map((word) => word.toLowerCase())),
 ].join(', ')
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': pageType === 'article' ? 'BlogPosting' : 'WebSite',
+  headline: pageTitle,
+  description: pageDescription,
+  url: pageUrl,
+  author: {
+    '@type': 'Person',
+    name: pageAuthor,
+  },
+  publisher: {
+    '@type': 'Organization',
+    name: siteConfig.title,
+    logo: {
+      '@type': 'ImageObject',
+      url: new URL('/favicon.ico', Astro.site).href,
+    },
+  },
+  image: pageImage,
+  ...(datePublished ? { datePublished } : {}),
+  ...(dateModified ? { dateModified } : {}),
+}
 const baseCssVars: { [key: string]: string } = {
   'theme-font': siteConfig.font,
   'ec-frm-frameBoxShdCssVal': 'none',
@@ -150,6 +176,7 @@ let generatedCss: string = cssLines.join('\n')
       href={new URL('rss.xml', Astro.site)}
     />
     <title>{pageTitle}</title>
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
     <style is:global define:vars={baseCssVars}></style>
     <style is:inline set:html={generatedCss}></style>
     {themeMode === 'light-dark-auto' && <LightDarkAutoThemeLoader />}
