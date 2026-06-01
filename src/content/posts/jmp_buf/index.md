@@ -1,5 +1,6 @@
 ---
 title: "setjmp: jmp_buf exploitation"
+description: Blogpost about the internal structure of jmp_buf and how to poison it.
 published: 2026-05-29
 draft: false
 tags:

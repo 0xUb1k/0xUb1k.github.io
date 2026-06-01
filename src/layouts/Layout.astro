@@ -35,28 +35,33 @@ const pageImage =
 const pageKeywords = [
   ...new Set(siteConfig.tags.concat(tags || []).map((word) => word.toLowerCase())),
 ].join(', ')
-const jsonLd = {
-  '@context': 'https://schema.org',
-  '@type': pageType === 'article' ? 'BlogPosting' : 'WebSite',
-  headline: pageTitle,
-  description: pageDescription,
-  url: pageUrl,
-  author: {
-    '@type': 'Person',
-    name: pageAuthor,
-  },
-  publisher: {
-    '@type': 'Organization',
-    name: siteConfig.title,
-    logo: {
-      '@type': 'ImageObject',
-      url: new URL('/favicon.ico', Astro.site).href,
-    },
-  },
-  image: pageImage,
-  ...(datePublished ? { datePublished } : {}),
-  ...(dateModified ? { dateModified } : {}),
+const authorSchema = {
+  '@type': 'Person',
+  name: pageAuthor,
 }
+const jsonLd =
+  pageType === 'article'
+    ? {
+        '@context': 'https://schema.org',
+        '@type': 'BlogPosting',
+        headline: pageTitle,
+        description: pageDescription,
+        url: pageUrl,
+        mainEntityOfPage: pageUrl,
+        author: authorSchema,
+        publisher: authorSchema,
+        image: pageImage,
+        ...(datePublished ? { datePublished } : {}),
+        ...(dateModified ? { dateModified } : {}),
+      }
+    : {
+        '@context': 'https://schema.org',
+        '@type': 'WebSite',
+        name: pageTitle,
+        description: pageDescription,
+        url: pageUrl,
+        publisher: authorSchema,
+      }
 const baseCssVars: { [key: string]: string } = {
   'theme-font': siteConfig.font,
   'ec-frm-frameBoxShdCssVal': 'none',
