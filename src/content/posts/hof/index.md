@@ -1,5 +1,6 @@
 ---
 title: "House of Fish: TRX CTF 2026"
+description: Writeup of a blind heap challenge through large bin attack and smallbin stash unlink attack.
 published: 2026-04-27
 draft: false
 tags:

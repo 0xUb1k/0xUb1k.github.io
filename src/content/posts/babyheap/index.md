@@ -1,6 +1,6 @@
 ---
 title: "Babyheap: JustCTF - Chapter 1"
-description: Writeup of a Heap Exploitation challenge.
+description: Writeup of a Heap Exploitation challenge with environ leak.
 published: 2025-10-20
 draft: false
 tags:

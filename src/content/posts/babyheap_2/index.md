@@ -1,6 +1,6 @@
 ---
 title: "Babyheap: JustCTF - Chapter 2"
-description: Part 2 of Babyheap, a writeup of a Heap Challenge
+description: continuation of the babyheap writeup focusing on exit_func overwrite and scanf trickery.
 published: 2025-10-21
 draft: false
 tags:
