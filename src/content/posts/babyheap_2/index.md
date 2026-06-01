@@ -1,8 +1,12 @@
 ---
-title: 'Babyheap: JustCTF - Chapter 2'
+title: "Babyheap: JustCTF - Chapter 2"
+description: Part 2 of Babyheap, a writeup of a Heap Challenge
 published: 2025-10-21
 draft: false
-tags: ['pwn', 'heap', 'exit_funcs']
+tags:
+  - pwn
+  - heap
+  - exit_funcs
 toc: true
 ---
 Let's tackle the next chapter of babyheap, this one is a bit more exotic...

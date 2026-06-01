@@ -1,8 +1,13 @@
 ---
-title: 'Babyheap: JustCTF - Chapter 1'
+title: "Babyheap: JustCTF - Chapter 1"
+description: Writeup of a Heap Exploitation challenge.
 published: 2025-10-20
 draft: false
-tags: ['pwn', 'heap', 'environ', 'rop']
+tags:
+  - pwn
+  - heap
+  - environ
+  - rop
 toc: true
 ---
 Normally, especially for beginners, seeing a baby challenge is always a very refreshing alternative to the high level tasks made to challenge also the best of players.

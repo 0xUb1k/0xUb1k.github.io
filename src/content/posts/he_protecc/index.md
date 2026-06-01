@@ -1,5 +1,6 @@
 ---
 title: "he_protecc: CornCTF 2025"
+description: Writeup of a shellcode executer challenge
 published: 2025-06-20
 draft: false
 tags:
