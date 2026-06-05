@@ -1,5 +1,6 @@
 ---
 title: "echo: Srdnlen Quals 2026"
+description: "Interesting off by one ctf challenge."
 published: 2026-02-03
 draft: false
 tags:
