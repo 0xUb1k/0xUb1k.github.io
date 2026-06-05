@@ -168,6 +168,7 @@ export interface SiteConfig {
   site: string
   font: string
   title: string
+  shortTitle: string
   description: string
   author: string
   socialCardAvatarImage: string

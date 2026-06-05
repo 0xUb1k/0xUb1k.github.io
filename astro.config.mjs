@@ -64,9 +64,7 @@ export default defineConfig({
     plugins: [tailwindcss()],
   },
   integrations: [
-    sitemap({
-      filter: (page) => !page.includes('/tags/'),
-    }),
+    sitemap(),
     expressiveCode({
       themes: siteConfig.themes.include,
       useDarkModeMediaQuery: false,

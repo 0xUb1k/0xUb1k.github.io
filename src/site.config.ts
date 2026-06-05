@@ -5,6 +5,8 @@ const config: SiteConfig = {
   site: 'https://blog.davidherm.es',
   // The name of your site, used in the title and for SEO.
   title: "Ub1k's Blog | Capture The Flag & Vulnerability Research",
+  // A shorter site name used for visible on-page branding.
+  shortTitle: "Ub1k's Blog",
   // The description of your site, used for SEO and RSS feed.
   description:
     'Cybersecurity blog by David Hermes (Ub1k). In-depth binary exploitation, heap pwn, reverse engineering, and CTF writeups.',
