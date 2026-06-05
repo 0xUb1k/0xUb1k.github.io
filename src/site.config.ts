@@ -4,14 +4,14 @@ const config: SiteConfig = {
   // Absolute URL to the root of your published site, used for generating links and sitemaps.
   site: 'https://blog.davidherm.es',
   // The name of your site, used in the title and for SEO.
-  title: "Ub1k's blog",
+  title: "Ub1k's Blog | Capture The Flag & Vulnerability Research",
   // The description of your site, used for SEO and RSS feed.
   description:
-    'Cybersecurity blog by David Hermes, focused on binary exploitation, pwn, reverse engineering, and CTF writeups.',
+    'Cybersecurity blog by David Hermes (Ub1k). In-depth binary exploitation, heap pwn, reverse engineering, and CTF writeups.',
   // The author of the site, used in the footer, SEO, and RSS feed.
   author: 'David Hermes',
   // Keywords for SEO, used in the meta tags.
-  tags: ['pwn', 'pwnable', 'binary exploitation', 'ctf', 'reverse engineering', 'cybersecurity', 'Ub1k', 'David Hermes', 'David', 'Hermes'],
+  tags: ['Binary Exploitation', 'CTF Writeups', 'Pwnissa', 'glibc', 'Heap Exploitation', 'Kernel Exploitation', 'x86_64', 'David Hermes', 'Ub1k'],
   // Path to the image used for generating social media previews.
   // Needs to be a square JPEG file due to limitations of the social card generator.
   // Try https://squoosh.app/ to easily convert images to JPEG.
