@@ -65,15 +65,15 @@ It's literally an 8-element, 64-bit integer array, nothing special. If we want t
 
 Wait, what does _mangled_ mean? Well, let's look at this example of a `__jmp_buf[8]` struct:
 
-![](images/struct_in_memory.webp)
+![__jmp_buf shown in pwndbg](images/struct_in_memory.webp)
 
 As you can notice, RBP, RSP, and RIP should all be addresses, but they got mangled in some way. This means that we cannot simply overwrite them with a new address to modify these registers.
 ### breaking the mangling
 
 By setting a breakpoint in the `__longjmp` function in GDB, it is possible to understand exactly how the function demangles the pointers.
 
-![](./images/image.webp)
-![](./images/image-1.webp)
+![Asm that demangles the pointer in __longjmp](./images/image.webp)
+![last instruction of the function](./images/image-1.webp)
 
 It first executes a `ror` of 17 bits (`0x11`), and then it XORs the resulting value with a predetermined key taken from the Thread Control Block at offset `0x30` (`fs:0x30`).
 

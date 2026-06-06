@@ -88,7 +88,7 @@ admin = (unsigned long*) mmap((void*) 0x1337000, 8, PROT_READ | PROT_WRITE, MAP_
 
 This is very important because it is the only pointer we know of in the entire binary. Looking at the checksec output confirms this. 
 
-![](images/checksec.webp)
+![xhecksec output showing all security mitigations active.](images/checksec.webp)
 
 ## blind heap exploitation
 
@@ -101,7 +101,7 @@ This technique abuses a mechanism within the smallbins to move a user-controlled
 Smallbins are **circular doubly-linked lists** that operate in a **FIFO (First-In, First-Out)** fashion, unlike LIFO (Last-In, First-Out) used by the tcache and fastbins. 
 New chunks are inserted at the **head** (the front) of the bin and removed from the **tail** (the back) for allocation. On 64-bit systems, smallbins manage chunks ranging from `0x20` to `0x3F0` bytes.  Smallbins have no fixed count limit, unlike tcache chunks.
 
-![](./images/smallbin.webp)
+![Representation of smallbins](./images/smallbin.webp)
 
 Looking at the size classes of the smallbin chunk it is possible to notice an **overlap** with tcache sizes. The reason can be explained by understanding that tcache lists can store only seven elements. When the tcache is full, the allocator must decide where to store the currently freed chunk. Chunks fitting fastbin sizes (typically `0x20` to `0x80` bytes) are stored in the fastbins. Larger chunks (up to `0x3F0` bytes for smallbins) are first placed into the **Unsorted Bin**. They are only sorted into their respective smallbins during a subsequent `malloc` request.
 ### tcache stashing
@@ -144,7 +144,7 @@ But the line directly after our vulnerability creates a problem: `bck->fd = bin`
 
 We also need to remember that the stashing mechanism will try to move seven chunks into the tcache list. **When we poison a smallbin chunk we destroy the circular linked list**, this means that we need to be careful about what chunk we poison, best practice is to modify the 6th chunk so that our fake admin chunk becomes the seventh.
 
-![](./images/smallbin_poison.webp)
+![State of the list after smallbin poisoning.](./images/smallbin_poison.webp)
 
 :::warning
 This method alone **will not work**. Our admin memory area is completely empty, so this method would try to **dereference a non-existing pointer** in `admin + 0x08` and immediately crash the program.
@@ -166,11 +166,11 @@ You can find a more general explanation of this attack in the shellfish how2heap
 We can allocate 7 chunks of size `0x90` that will be used to fill the tcache. After that, we generate 6 chunks of the same size destined for the smallbin list, allocating `0x10` guard chunks after each of them so that they do not get coalesced. Then, we free the 7 tcache chunks, followed by the 6 smallbin chunks (but not the guard chunks).
 The 6 smallbin chunks will be placed in the unsortedbin first, we must allocate a sufficiently large chunk so that the remaining chunks get moved into the smallbin list.
 
-![](images/bins_stash_unlin1.webp)
+![Image of pwndbg that shows how the stash unlink attack works.](images/bins_stash_unlin1.webp)
 
 Now we can edit the top smallbin chunk's `bk` pointer by overwriting the pointer with the `&admin - 0x10` address, after this the `bins` view changes slightly:
 
-![](images/bins_stash_unlink2.webp)
+![After the stash unlink attack](images/bins_stash_unlink2.webp)
 
 If we now allocate 8 `0x90` sized chunks we would find the admin pointer in the tcache bin! But as i said before we still that pointer in the `bk` field.
 ## Largebin attack
@@ -178,13 +178,13 @@ This attack will help us move a heap pointer to the admin area, it is not really
 ### Largebins
 Largebins follow some of the same basic rules as smallbins: freed chunks get stored in the unsorted bins and if they are of the required size (`0x400` bytes for x86 64 bit) they are sorted into the largebins at the next malloc call. They also possess the normal `fd` and `bk` pointers to maintain the doubly linked list property. In largebins, this primary list is sorted in strictly **decreasing** order by chunk size. 
 
-![](./images/largebin_simple.webp)
+![Schema showing how largebin lists work](./images/largebin_simple.webp)
 
 A notable addition is a **second** circular doubly linked list. For efficiency reasons different sizes are stored in the same bin (`0x400 - 0x43F, 0x440 - 0x47F`, etc.). The `fd_nextsize` and `bk_nextsize` pointers are used to quickly jump to the right size without having to scan every single chunk, these pointers are only used by the first chunk of a specific size-subclass.  To remove the overhead of having to move the `_nextsize` pointers, a malloc operation will remove the tail chunk of a specific size.
 #### Example scenario
 When new chunks of a preexisting size are added, they get appended after the same size head chunk. The diagram below shows that **LC3** was the first `0x420` chunk added,  making it the head that maintains the `_nextsize` pointers. When LC4 is sorted in, it is added directly after the head. Additionally a possible LC7 with size `0x420` would be added between LC3 and LC4. When a chunk gets malloced with size `0x420` the tail chunk is removed, in our example that is LC4.
 
-![](./images/largebin_nextsize.webp)
+![Largebins netsize pointers in action](./images/largebin_nextsize.webp)
 ### The attack 
 The attack consists in an arbitrary heap pointer write, perfect for the **dereferencing** problem we have with the tcache stashing unlink attack.
 The following `_int_malloc()` code handles the sorting of a new chunk (victim) into the largebin in the specific case in which it is the absolute smallest chunk being added. 
@@ -265,7 +265,7 @@ Now that we understand how the two vulnerabilities work, we can chain them. We n
 
 The last part helps to remove trash from the freelists. Now we can look in the `*admin` area where there should be a pointer now.
 
-![](images/admin_area.webp)
+![Admin memory area seen through pwndbg](images/admin_area.webp)
 
 After this, the stage is prepared for our smallbin shenanigans. 
 
@@ -298,6 +298,6 @@ After this, the stage is prepared for our smallbin shenanigans.
 
 Looking in the `bins` we should see our chunk in the tcache list ready to be used.
 
-![](images/final_heap.webp)
+![Final heap state](images/final_heap.webp)
 
 The rest is easy. By allocating two chunks and writing in the second we can modify the admin area and write the text required, by triggering that menu option we get the flag.
