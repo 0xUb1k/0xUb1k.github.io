@@ -23,7 +23,7 @@ const { title, description, tags, author, noindex = false, datePublished, dateMo
 
 const pageUrl = new URL(Astro.url.pathname, Astro.site).href.replace(/\/$/, '') // Remove trailing slash for consistency
 const pageType = Astro.url.pathname.startsWith('/posts') ? 'article' : 'website'
-const pageTitle = title ? `${title} - ${siteConfig.title}` : siteConfig.title
+const pageTitle = title ? `${title} - ${siteConfig.shortTitle}` : siteConfig.shortTitle
 const pageDescription = description || siteConfig.description
 const pageAuthor = author || siteConfig.author
 const pageImage =
