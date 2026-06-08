@@ -37,6 +37,7 @@ jobs:
           # Automatically uses your deployment URL to find the sitemap
           sitemap-location: '${{ steps.deployment.outputs.page_url }}sitemap-0.xml'
           key: ${{ secrets.INDEXNOW_KEY }}
-          since: 1
-          since-unit: 'day'
           endpoint: 'api.indexnow.org'
+          lastmod-required: false
+          since: 365
+          since-unit: 'day'
