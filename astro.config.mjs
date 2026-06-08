@@ -67,6 +67,9 @@ export default defineConfig({
     format: 'file', 
   },
   integrations: [
+    indexnow({
+      key: process.env.INDEXNOW_KEY, 
+    }),
     sitemap(),
     expressiveCode({
       themes: siteConfig.themes.include,
