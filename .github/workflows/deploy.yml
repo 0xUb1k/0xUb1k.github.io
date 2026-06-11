@@ -5,6 +5,10 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+# Opt into Node.js 24 for all actions globally to silence warnings
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 permissions:
   contents: read
   pages: write
@@ -16,8 +20,9 @@ jobs:
     steps:
       - name: Checkout your repository using git
         uses: actions/checkout@v4
+        
       - name: Install, build, and upload your site
-        uses: withastro/action@v3
+        uses: withastro/action@v6 # Updated to v6
 
   deploy:
     needs: build
@@ -28,16 +33,14 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5 # Updated to v5
 
-      # --- ADDED INDEXNOW AUTOMATION STEP ---
       - name: Submit newly added pages to IndexNow
         uses: bojieyang/indexnow-action@v3
         with:
-          # Automatically uses your deployment URL to find the sitemap
           sitemap-location: '${{ steps.deployment.outputs.page_url }}sitemap-0.xml'
           key: ${{ secrets.INDEXNOW_KEY }}
           endpoint: 'api.indexnow.org'
           lastmod-required: false
-          since: 365
+          since: 365 
           since-unit: 'day'

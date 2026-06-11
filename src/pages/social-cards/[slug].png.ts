@@ -93,7 +93,8 @@ export async function getStaticPaths() {
   const posts = await getSortedPosts()
   return posts
     .map((post) => ({
-      params: { slug: post.id },
+      // Ensure slug does not contain a generated `.html` suffix
+      params: { slug: String(post.id).replace(/\.html$/, '') },
       props: {
         pubDate: post.data.published ? dateString(post.data.published) : undefined,
         title: post.data.title,

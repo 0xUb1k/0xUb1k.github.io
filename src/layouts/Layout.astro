@@ -21,16 +21,17 @@ interface Props {
 const { title, description, tags, author, noindex = false, datePublished, dateModified } = Astro.props
 
 
-const pageUrl = new URL(Astro.url.pathname, Astro.site).href.replace(/\/$/, '') // Remove trailing slash for consistency
+// Normalize pathname to remove any generated `.html` suffix so canonicals
+// and social-card paths use pretty URLs (/posts/hof) instead of /posts/hof.html
+const pathnameNoHtml = Astro.url.pathname.replace(/\.html$/, '')
+const pageUrl = new URL(pathnameNoHtml, Astro.site).href.replace(/\/$/, '') // Remove trailing slash for consistency
 const pageType = Astro.url.pathname.startsWith('/posts') ? 'article' : 'website'
 const pageTitle = title ? `${title} - ${siteConfig.shortTitle}` : siteConfig.title
 const pageDescription = description || siteConfig.description
 const pageAuthor = author || siteConfig.author
 const pageImage =
   pageType === 'article'
-    ? Astro.url.origin +
-      Astro.url.pathname.replace(/\/posts\//, '/social-cards/') +
-      '.png'
+    ? Astro.url.origin + pathnameNoHtml.replace(/\/posts\//, '/social-cards/') + '.png'
     : `${Astro.url.origin}/social-cards/__default.png`
 const pageKeywords = [
   ...new Set(siteConfig.tags.concat(tags || []).map((word) => word.toLowerCase())),
